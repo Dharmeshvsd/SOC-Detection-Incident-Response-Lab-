@@ -1,0 +1,111 @@
+<!-- Custom Wazuh rules for the SOC Detection & Incident Response Lab -->
+<!-- Wazuh 4.14.7. Validate with: /var/ossec/bin/wazuh-analysisd -t -->
+
+<group name="local,windows,sysmon,">
+
+  <!-- T1082 System Information Discovery -->
+  <rule id="100100" level="7">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)systeminfo\.exe$</field>
+    <description>System Information Discovery detected via Sysmon</description>
+    <mitre>
+      <id>T1082</id>
+    </mitre>
+    <group>sysmon,windows,discovery,</group>
+  </rule>
+
+  <!-- T1057 Process Discovery -->
+  <rule id="100120" level="7">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\tasklist\.exe$</field>
+    <description>Process Discovery detected via tasklist.exe</description>
+    <mitre>
+      <id>T1057</id>
+    </mitre>
+    <group>sysmon,windows,discovery,</group>
+  </rule>
+
+  <!-- T1016 System Network Configuration Discovery -->
+  <rule id="100130" level="7">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(ipconfig|netsh|arp|nbtstat)\.exe$</field>
+    <description>System Network Configuration Discovery detected via Sysmon</description>
+    <mitre>
+      <id>T1016</id>
+    </mitre>
+    <group>sysmon,windows,discovery,network_discovery,</group>
+  </rule>
+
+  <!-- T1049 System Network Connections Discovery -->
+  <rule id="100140" level="7">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\netstat\.exe$</field>
+    <description>System Network Connections Discovery detected via Sysmon</description>
+    <mitre>
+      <id>T1049</id>
+    </mitre>
+    <group>sysmon,windows,discovery,network_discovery,</group>
+  </rule>
+
+  <!-- T1012 Query Registry.
+       Child of built-in rule 92025 (Reg.exe execution, level 0). With if_group
+       the built-in rule matched first and this rule never fired. -->
+  <rule id="100150" level="7">
+    <if_sid>92025</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)reg\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)query</field>
+    <description>Registry Query Discovery detected via Sysmon</description>
+    <mitre>
+      <id>T1012</id>
+    </mitre>
+    <group>sysmon,windows,discovery,registry_discovery,</group>
+  </rule>
+
+</group>
+
+<group name="local,windows,windows_defender,">
+
+  <!-- Defender Event ID 1116 (threat detected). Child of built-in 62123. -->
+  <rule id="100201" level="12">
+    <if_sid>62123</if_sid>
+    <field name="win.system.eventID">^1116$</field>
+    <description>Windows Defender detected a threat. Review the original event for threat name, severity, process, and path.</description>
+    <group>windows,windows_defender,malware_detection,</group>
+  </rule>
+
+  <!-- Defender Event ID 1117 (protective action taken). Child of built-in 62124. -->
+  <rule id="100202" level="3">
+    <if_sid>62124</if_sid>
+    <field name="win.system.eventID">^1117$</field>
+    <description>Windows Defender performed a protective action. Review the original event for action details and affected file.</description>
+    <group>windows,windows_defender,malware_remediation,</group>
+  </rule>
+
+</group>
+
+<group name="local,tuning,">
+
+  <!-- Wazuh agent's own background scan running "net user" -->
+  <rule id="100301" level="0">
+    <if_sid>92031</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)ossec-agent.+wazuh-agent\.exe$</field>
+    <description>Ignored: net.exe launched by the Wazuh agent (background scan)</description>
+  </rule>
+
+  <!-- net1.exe child of the agent's 32-bit net.exe, running as SYSTEM.
+       Limitation: also hides any SYSTEM-run 32-bit net1.exe. -->
+  <rule id="100302" level="0">
+    <if_sid>92031</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)SysWOW64.+net1\.exe$</field>
+    <field name="win.eventdata.parentUser" type="pcre2">(?i)NT AUTHORITY.+SYSTEM</field>
+    <description>Ignored: net1.exe child of agent background scan</description>
+  </rule>
+
+  <!-- reg.exe launched by the Wazuh agent -->
+  <rule id="100303" level="0">
+    <if_sid>100150</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)ossec-agent.+wazuh-agent\.exe$</field>
+    <description>Ignored: reg.exe launched by the Wazuh agent (background scan)</description>
+  </rule>
+
+</group>

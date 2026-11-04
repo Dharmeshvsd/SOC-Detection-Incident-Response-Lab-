@@ -1,0 +1,3 @@
+<!-- In the Wazuh manager's ossec.conf, inside <global>, to keep a JSON copy of
+     every event (useful for debugging; needs disk space). -->
+<logall_json>yes</logall_json>

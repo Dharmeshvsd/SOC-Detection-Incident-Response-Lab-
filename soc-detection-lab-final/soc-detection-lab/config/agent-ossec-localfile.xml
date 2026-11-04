@@ -1,0 +1,13 @@
+<!-- Add inside <ossec_config> in the Windows agent's ossec.conf.
+     Collect each channel only once: a duplicate block gives warning (1958). -->
+
+<localfile>
+  <location>Microsoft-Windows-Sysmon/Operational</location>
+  <log_format>eventchannel</log_format>
+</localfile>
+
+<localfile>
+  <location>Microsoft-Windows-Windows Defender/Operational</location>
+  <log_format>eventchannel</log_format>
+  <only-future-events>no</only-future-events>
+</localfile>
